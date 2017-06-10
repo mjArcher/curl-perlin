@@ -6,13 +6,40 @@
 // http://w2.mat.ucsb.edu/200C/spring_2013/
 // tutorial: http://petewerner.blogspot.co.uk/2015/02/intro-to-curl-noise.html
 // colours / fading using rgba
+// //https://krazydad.com/tutorials/makecolors.php
 //
 //
 // create class of particles, x,y position, 
 // compute curl
+// periodic boundary conditions or if reach end set to random point?
 //
 
 noise.seed(Math.random());
+
+function RGB2Color(r,g,b)
+{
+  return 'rgb(' + Math.round(r) + ',' + Math.round(g) + ',' + Math.round(b) + ')';
+}
+
+var frequency = .3;
+var amplitude = 127;
+var center = 128;
+
+var colours = [];
+var colourNum = 32;
+
+function createColours()
+{
+  for (var i = 0; i < colourNum; ++i)
+  {
+    var v = Math.sin(frequency*i) * amplitude + center;
+    colours.push(RGB2Color(v,v,v));
+  }
+}
+
+createColours();
+console.log(colours.length);
+console.log(colours[10]);
 
 function particles(px, py, r){
   var node = {
@@ -26,8 +53,8 @@ function particles(px, py, r){
   particles.push(node);
 }
 
-var pad = 75;
-var PARTICLES = 2000;
+var pad = 70;
+var PARTICLES = 1000;
 var particles = [];
 var ctx = canvas.getContext('2d');
 canvas.width = window.innerWidth;
@@ -39,7 +66,8 @@ for(i=0;i<PARTICLES;i++){
     y: getRand(pad,canvas.height-pad),
     u: 0,
     w: 0,
-    radius: 2
+    radius: 1,
+    colour: colours[Math.floor(Math.random() * colourNum)]
   };
   particles.push(particle);
 }
@@ -66,30 +94,58 @@ function ComputeCurl(x, y)
 
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
+
+function particleBoundaries()
+{
+  for(i=0; i < particles.length; i++)
+  {
+    if(particles[i].x > canvas.width){
+      particles[i].x = getRand(pad,canvas.width-pad);
+      particles[i].x_vel = -particles[i].x_vel;
+    }
+    else if(particles[i].x < 0) { 
+      particles[i].x = getRand(pad,canvas.width-pad);
+      particles[i].x_vel = -particles[i].x_vel;
+    }
+    else if(particles[i].y > canvas.height){
+      particles[i].y = getRand(pad,canvas.height-pad);
+      particles[i].y_vel = -particles[i].y_vel;
+    }
+    else if(particles[i].y < 0) { 
+      particles[i].y = getRand(pad,canvas.height-pad);
+      particles[i].y_vel = -particles[i].y_vel;
+    }
+    particles[i].x += particles[i].x_vel;
+    particles[i].y += particles[i].y_vel;
+  }
+
+}
+
 function draw() {
 
 
-  var dt = 1;
+  var speed = 2; 
   var r_a = 0.4;
 
   // canvas.save()
   // Draw over the whole canvas to create the trail effect
-  ctx.fillStyle = 'rgba(0, 0, 0, .05)';
+  ctx.fillStyle = 'rgba(0, 0, 0, '+ .01 + ')';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   //
   for(i=0; i < particles.length; i++)
   {
     var a = noise.simplex2(particles[i].x/canvas.width, particles[i].y/canvas.height);
-    var curl = ComputeCurl(particles[i].x/(canvas.width*0.5), particles[i].y/(canvas.height*0.5));
+    var curl = ComputeCurl(particles[i].x/(canvas.width*0.2), particles[i].y/(canvas.height*0.3));
 
-    particles[i].x += dt*curl[0];
-    particles[i].y += dt*curl[1];
+    particles[i].x_vel = speed*curl[0];// /Math.sqrt(Math.pow(curl[0]) + Math.pow(curl[1]));
+    particles[i].y_vel = speed*curl[1];///Math.sqrt(Math.pow(curl[0]) + Math.pow(curl[1]));
     ctx.beginPath();
-    ctx.fillStyle = '#ff0000';
+    ctx.fillStyle = "#FF0000";
     ctx.moveTo(particles[i].x, particles[i].y);
     ctx.arc(particles[i].x, particles[i].y, particles[i].radius, 0, 2 * Math.PI);
     ctx.fill();
   }
+  particleBoundaries();
   window.requestAnimationFrame(draw);
 }
 
