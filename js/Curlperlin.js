@@ -38,23 +38,9 @@ function createColours()
 }
 
 createColours();
-console.log(colours.length);
-console.log(colours[10]);
 
-function particles(px, py, r){
-  var node = {
-    x: px,
-    y: py,
-    oldx: px,
-    oldy: py,
-    radius: r,
-    fixed: false
-  };
-  particles.push(node);
-}
-
-var pad = 70;
-var PARTICLES = 1000;
+var pad = 0;
+var PARTICLES = 2000;
 var particles = [];
 var ctx = canvas.getContext('2d');
 canvas.width = window.innerWidth;
@@ -66,7 +52,7 @@ for(i=0;i<PARTICLES;i++){
     y: getRand(pad,canvas.height-pad),
     u: 0,
     w: 0,
-    radius: 1,
+    radius: 1.3,
     colour: colours[Math.floor(Math.random() * colourNum)]
   };
   particles.push(particle);
@@ -75,6 +61,23 @@ for(i=0;i<PARTICLES;i++){
 function getRand(min, max) {
       return Math.random() * (max - min) + min;
 }
+
+function ComputeCurl3(x, y, z)  
+{ 
+  var eps = 0.001;  
+  var n1, n2, a, b;  
+
+  n1  = noise.simplex3(x, y + eps, z); 
+  n2  = noise.simplex3(x, y - eps, z); 
+  a = (n1 - n2)/(2 * eps); 
+  
+  n1  = noise.simplex3(x + eps, y, z); 
+  n2  = noise.simplex3(x - eps, y, z); 
+  b = (n1 - n2)/(2 * eps); 
+
+  return [a,-b];
+}
+
 
 function ComputeCurl(x, y)  
 { 
@@ -118,29 +121,30 @@ function particleBoundaries()
     particles[i].x += particles[i].x_vel;
     particles[i].y += particles[i].y_vel;
   }
-
 }
 
+var val = 0;
 function draw() {
 
-
-  var speed = 2; 
-  var r_a = 0.4;
+  val = 0;
+  var speed = 0.2; 
+  var r_a = 0.9;
+  var step = 100; // smaller more fine
+  var fade = 0.01;
 
   // canvas.save()
   // Draw over the whole canvas to create the trail effect
-  ctx.fillStyle = 'rgba(0, 0, 0, '+ .01 + ')';
+  ctx.fillStyle = 'rgba(0, 0, 0, '+ fade + ')';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   //
   for(i=0; i < particles.length; i++)
   {
-    var a = noise.simplex2(particles[i].x/canvas.width, particles[i].y/canvas.height);
-    var curl = ComputeCurl(particles[i].x/(canvas.width*0.2), particles[i].y/(canvas.height*0.3));
-
+    var curl = ComputeCurl3(particles[i].x/step, particles[i].y/step, val);
     particles[i].x_vel = speed*curl[0];// /Math.sqrt(Math.pow(curl[0]) + Math.pow(curl[1]));
     particles[i].y_vel = speed*curl[1];///Math.sqrt(Math.pow(curl[0]) + Math.pow(curl[1]));
     ctx.beginPath();
-    ctx.fillStyle = "#FF0000";
+    // ctx.fillStyle = "#00008B";
+    ctx.fillStyle = "#dccab1";
     ctx.moveTo(particles[i].x, particles[i].y);
     ctx.arc(particles[i].x, particles[i].y, particles[i].radius, 0, 2 * Math.PI);
     ctx.fill();
